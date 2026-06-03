@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contoso Bike Store Demo</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="tag">Azure App Service + Dynatrace Demo</p>
+        <h1>Contoso Bike Store</h1>
+        <p>
+          Welcome to the bike store observability demo. Use the button below to
+          generate a controlled server-side issue and validate your monitoring
+          pipeline.
+        </p>
+        <button id="simulateIssueBtn">Simulate Issue in Logs</button>
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+      <section class="cards">
+        <article class="card">
+          <h2>Road Bikes</h2>
+          <p>Lightweight bikes built for speed and endurance.</p>
+        </article>
+        <article class="card">
+          <h2>Mountain Bikes</h2>
+          <p>Rugged rides designed for trails and rough terrain.</p>
+        </article>
+        <article class="card">
+          <h2>City Bikes</h2>
+          <p>Comfortable daily commuters for urban adventures.</p>
+        </article>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
