@@ -1,0 +1,28 @@
+{
+  "name": "webapp-with-issues-demo-mx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oaviles/webapp-with-issues-demo-mx.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/oaviles/webapp-with-issues-demo-mx/issues"
+  },
+  "homepage": "https://github.com/oaviles/webapp-with-issues-demo-mx#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
+  }
+}
