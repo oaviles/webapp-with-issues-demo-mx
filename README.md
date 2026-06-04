@@ -64,15 +64,60 @@ npm test
 2. Click **Simulate Issue in Logs**.
 3. The browser calls `POST /api/simulate-issue`.
 4. The server intentionally throws and catches an error in middleware.
-5. A structured error JSON is written to logs (`console.error`) including:
-   - `errorId`
-   - `message`
-   - `code`
-   - request path/method
-   - timestamp
-   - stack trace
+5. A structured JSON entry is written to logs (`console.warn`) including:
+   - `level` – `warn` for simulations, `error` for real failures
+   - `category` – `simulation` or `app_error`
+   - `errorId` – UUID for cross-referencing logs and responses
+   - `message`, `code`, `stack`
+   - `method`, `path`, `timestamp`
+   - `traceId`, `spanId` – extracted from the incoming W3C `traceparent` header
 
 This is ideal for validating detection, alerting, and tracing in Dynatrace.
+
+## Log Classification
+
+All structured log entries include a `level` and `category` field to reduce observability noise:
+
+| `level` | `category`   | Meaning                                         |
+|---------|--------------|-------------------------------------------------|
+| `warn`  | `simulation` | Expected demo event triggered via the UI button |
+| `error` | `app_error`  | Genuine unhandled application error             |
+| `error` | *(process)*  | Uncaught exception or unhandled rejection       |
+| `info`  | *(process)*  | Startup / ready messages                        |
+
+**Recommended Dynatrace alert**: target `code == "BIKE_STORE_UNCAUGHT_EXCEPTION"` or `category == "app_error"` to isolate real failures from simulation noise.
+
+**Startup noise** (npm `info`/`notice` lines and OpenSSL `rehash` warnings printed to stderr during `npm install`) are not application log entries. Filter them in Dynatrace log ingestion by excluding lines that do **not** match the `{` prefix of structured JSON.
+
+## Trace / Span ID Propagation
+
+When a downstream proxy or Dynatrace OneAgent injects a W3C [traceparent](https://www.w3.org/TR/trace-context/) header, the app parses it and includes `traceId` and `spanId` in every error log entry. This enables correlation between log events and distributed traces.
+
+Example header injected by Dynatrace or Azure Front Door:
+
+```
+traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+```
+
+The resulting log entry will contain:
+
+```json
+{
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7"
+}
+```
+
+## Simulation Endpoint Rate Limiting
+
+`POST /api/simulate-issue` is protected by an in-memory sliding-window rate limiter (default: **5 requests per minute per client IP**). Requests exceeding the limit receive:
+
+```json
+HTTP 429 Too Many Requests
+{ "error": "Too Many Requests", "message": "Simulation endpoint rate limit exceeded. Try again later." }
+```
+
+The limit can be adjusted via the `SIMULATE_RATE_LIMIT` environment variable (e.g. `SIMULATE_RATE_LIMIT=10`).
 
 ## Deploy to Azure App Service
 
@@ -117,8 +162,31 @@ After deploying:
 3. Click **Simulate Issue in Logs** multiple times.
 4. In Dynatrace, validate:
    - server errors (HTTP 500)
-   - error log entries (search by `BIKE_STORE_SIMULATION` or `errorId`)
-   - service/request traces for `POST /api/simulate-issue`
+   - log entries filtered by `category == "simulation"` or `code == "BIKE_STORE_SIMULATION"`
+   - real failure alerts targeted on `category == "app_error"` or `code == "BIKE_STORE_UNCAUGHT_EXCEPTION"`
+   - service/request traces for `POST /api/simulate-issue`, with `traceId`/`spanId` correlation
+
+### Recommended DQL queries
+
+Filter simulation noise (keep only true failures):
+
+```dql
+fetch logs
+| filter azure.resource.group == "DYNATRACE_WEBAPP_DEMO_MX"
+| filter status == "ERROR"
+| filter NOT contains(content, "BIKE_STORE_SIMULATION")
+| filter NOT startsWith(content, "npm ")
+| fields timestamp, content, status, dt.source_entity, trace_id, span_id
+```
+
+Alert on uncaught exceptions:
+
+```dql
+fetch logs
+| filter azure.resource.group == "DYNATRACE_WEBAPP_DEMO_MX"
+| filter contains(content, "BIKE_STORE_UNCAUGHT_EXCEPTION")
+| fields timestamp, content, status
+```
 
 ## API Endpoints
 
