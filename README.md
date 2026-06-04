@@ -47,7 +47,7 @@ npm install
 ### Run
 
 ```bash
-npm start
+ALLOW_SIMULATED_ISSUES=true npm start
 ```
 
 The app runs on `http://localhost:3000` (or `PORT` from environment).
@@ -63,11 +63,14 @@ npm test
 1. Open the home page.
 2. Click **Simulate Issue in Logs**.
 3. The browser calls `POST /api/simulate-issue`.
-4. The server intentionally throws and catches an error in middleware.
+4. The server requires `ALLOW_SIMULATED_ISSUES=true` and applies a per-IP rate limit (5/minute).
+5. When enabled and under limit, the server intentionally throws and catches an error in middleware.
 5. A structured error JSON is written to logs (`console.error`) including:
    - `errorId`
    - `message`
    - `code`
+   - `trace_id`
+   - `span_id`
    - request path/method
    - timestamp
    - stack trace
@@ -123,7 +126,10 @@ After deploying:
 ## API Endpoints
 
 - `GET /api/health` → `{ "status": "ok" }`
-- `POST /api/simulate-issue` → `500` with JSON payload:
+- `POST /api/simulate-issue`
+  - `403` when `ALLOW_SIMULATED_ISSUES` is not enabled
+  - `429` when the per-IP rate limit is exceeded
+  - `500` with JSON payload when simulation is allowed:
 
 ```json
 {
