@@ -8,6 +8,10 @@ The app provides:
 - A backend endpoint that intentionally throws an error
 - Structured error logging in application logs for monitoring validation
 
+> On Azure App Service, the simulation endpoint is disabled by default unless
+> `ENABLE_SIMULATION_ENDPOINT=true` is configured. This prevents repeated demo
+> traffic from flooding production error logs.
+
 ## Architecture
 
 - **Backend:** Node.js + Express
@@ -52,6 +56,12 @@ npm start
 
 The app runs on `http://localhost:3000` (or `PORT` from environment).
 
+To enable the demo error endpoint in Azure or other shared environments, set:
+
+```bash
+ENABLE_SIMULATION_ENDPOINT=true
+```
+
 ### Test
 
 ```bash
@@ -70,6 +80,7 @@ npm test
    - `code`
    - request path/method
    - timestamp
+   - `trace_id` / `span_id` when `traceparent` is available
    - stack trace
 
 This is ideal for validating detection, alerting, and tracing in Dynatrace.

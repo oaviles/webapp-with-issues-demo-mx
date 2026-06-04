@@ -14,7 +14,12 @@ simulateIssueBtn.addEventListener('click', async () => {
     const payload = await response.json();
 
     if (!response.ok) {
-      setStatus(`Issue generated (${payload.errorId}). Check logs.`, '#b91c1c');
+      if (payload.errorId) {
+        setStatus(`Issue generated (${payload.errorId}). Check logs.`, '#b91c1c');
+        return;
+      }
+
+      setStatus(payload.message || 'Simulation endpoint is unavailable.', '#b91c1c');
       return;
     }
 
