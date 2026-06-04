@@ -7,11 +7,22 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+const isIssueSimulationEnabled = () =>
+  process.env.NODE_ENV !== 'production' || process.env.SIMULATE_ISSUE_ENABLED === 'true';
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.post('/api/simulate-issue', (_req, _res, next) => {
+app.post('/api/simulate-issue', (_req, res, next) => {
+  if (!isIssueSimulationEnabled()) {
+    return res.status(404).json({
+      error: 'Not Found',
+      message:
+        'Simulation endpoint is disabled. Set SIMULATE_ISSUE_ENABLED=true to enable it in production.',
+    });
+  }
+
   const err = new Error('Simulated bike store failure for observability demo');
   err.code = 'BIKE_STORE_SIMULATION';
   next(err);

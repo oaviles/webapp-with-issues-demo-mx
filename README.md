@@ -7,6 +7,7 @@ The app provides:
 - A `Simulate Issue in Logs` button
 - A backend endpoint that intentionally throws an error
 - Structured error logging in application logs for monitoring validation
+- A production guardrail for the simulation endpoint (`SIMULATE_ISSUE_ENABLED=true`)
 
 ## Architecture
 
@@ -63,8 +64,9 @@ npm test
 1. Open the home page.
 2. Click **Simulate Issue in Logs**.
 3. The browser calls `POST /api/simulate-issue`.
-4. The server intentionally throws and catches an error in middleware.
-5. A structured error JSON is written to logs (`console.error`) including:
+4. In production, the endpoint only runs when `SIMULATE_ISSUE_ENABLED=true`; otherwise it returns `404`.
+5. When enabled, the server intentionally throws and catches an error in middleware.
+6. A structured error JSON is written to logs (`console.error`) including:
    - `errorId`
    - `message`
    - `code`
@@ -123,7 +125,10 @@ After deploying:
 ## API Endpoints
 
 - `GET /api/health` → `{ "status": "ok" }`
-- `POST /api/simulate-issue` → `500` with JSON payload:
+- `POST /api/simulate-issue`:
+  - Non-production: returns `500` with JSON payload:
+  - Production (`NODE_ENV=production`): returns `404` unless `SIMULATE_ISSUE_ENABLED=true`
+  - Production + `SIMULATE_ISSUE_ENABLED=true`: returns `500` with JSON payload:
 
 ```json
 {
