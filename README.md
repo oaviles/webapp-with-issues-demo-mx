@@ -65,6 +65,8 @@ npm test
 3. The browser calls `POST /api/simulate-issue`.
 4. The server intentionally throws and catches an error in middleware.
 5. A structured error JSON is written to logs (`console.error`) including:
+   - `source` = `bike-store-webapp`
+   - `errorType` = `APPLICATION_EXCEPTION`
    - `errorId`
    - `message`
    - `code`
@@ -119,6 +121,23 @@ After deploying:
    - server errors (HTTP 500)
    - error log entries (search by `BIKE_STORE_SIMULATION` or `errorId`)
    - service/request traces for `POST /api/simulate-issue`
+
+### Recommended DQL to reduce noisy ERROR lines
+
+Use the app-level markers added to structured logs (`source` / `errorType`) and exclude common npm/platform console noise:
+
+```dql
+fetch logs, from: now()-1h, to: now()
+| filter azure.resource.group == "DYNATRACE_WEBAPP_DEMO_MX"
+| filter status == "ERROR" or loglevel == "ERROR" or severity == "ERROR"
+| filter content contains "\"source\":\"bike-store-webapp\""
+| filter content contains "\"errorType\":\"APPLICATION_EXCEPTION\""
+| filter not(content contains "npm notice")
+| filter not(content contains "npm WARN")
+| fields timestamp, content, status, loglevel, severity
+| sort timestamp desc
+| limit 50
+```
 
 ## API Endpoints
 

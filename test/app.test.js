@@ -11,10 +11,24 @@ test('GET /api/health returns ok status', async () => {
 });
 
 test('POST /api/simulate-issue returns 500 and error details', async () => {
+  const originalConsoleError = console.error;
+  let loggedPayload;
+
+  console.error = (message) => {
+    loggedPayload = JSON.parse(message);
+  };
+
   const response = await request(app).post('/api/simulate-issue');
 
-  assert.equal(response.status, 500);
-  assert.equal(response.body.error, 'Internal Server Error');
-  assert.match(response.body.errorId, /^[a-f0-9-]{36}$/i);
-  assert.equal(response.body.message, 'A simulated error was generated. Check app logs.');
+  try {
+    assert.equal(response.status, 500);
+    assert.equal(response.body.error, 'Internal Server Error');
+    assert.match(response.body.errorId, /^[a-f0-9-]{36}$/i);
+    assert.equal(response.body.message, 'A simulated error was generated. Check app logs.');
+    assert.equal(loggedPayload.source, 'bike-store-webapp');
+    assert.equal(loggedPayload.errorType, 'APPLICATION_EXCEPTION');
+    assert.equal(loggedPayload.code, 'BIKE_STORE_SIMULATION');
+  } finally {
+    console.error = originalConsoleError;
+  }
 });

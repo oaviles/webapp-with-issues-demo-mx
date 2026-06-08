@@ -23,6 +23,8 @@ app.use((err, req, res, _next) => {
   console.error(
     JSON.stringify({
       level: 'error',
+      source: 'bike-store-webapp',
+      errorType: 'APPLICATION_EXCEPTION',
       errorId,
       message: err.message,
       code: err.code || 'UNHANDLED_ERROR',
